@@ -1,4 +1,4 @@
-async function getCandidateTables(token) {
+async function getTokenCandidateTraits(token) {
     var candidates = [];
     if (!token) {
         return candidates;
@@ -25,22 +25,8 @@ async function getCandidateTables(token) {
     return candidates;
 }
 
-async function findMatchingTable(candidates, folder) {
-    if (!candidates || candidates.length === 0 || !folder) {
-        return null;
-    }
-    for (const candidate of candidates) {
-        var table = game.tables.find(t => t.folder?.id === folder.id && t.name.toLowerCase() === candidate.toLowerCase());
-        if (table) {
-            console.log("Found names roll table for: ", candidate);
-            return table;
-        }
-    }
-    return null;
-}
-
-async function findRandomNameForToken(token, originalName) {
-    if (!token) {
+async function findMatchingTable(candidateTraits, suffix) {
+    if (!candidateTraits || candidateTraits.length === 0) {
         return null;
     }
     const folder = game.folders.find(f => f.type === "RollTable" && f.name === "albarytu-npc-names");
@@ -48,18 +34,48 @@ async function findRandomNameForToken(token, originalName) {
         ui.notifications.warn("RollTable Folder 'albarytu-npc-names' not found.");
         return null;
     }
-    var tables = await getCandidateTables(token);
-    var table = await findMatchingTable(tables, folder);
+    for (const candidate of candidateTraits) {
+        const tname = candidate + (suffix ? "-" + suffix : "");
+        var table = game.tables.find(t => t.folder?.id === folder.id && t.name.toLowerCase() === tname.toLowerCase());
+        if (table) {
+            console.log("Found names roll table for: ", tname);
+            return table;
+        }
+    }
+    return null;
+}
+
+async function rollComponent(candidateTraits, suffix) {
+    const table = await findMatchingTable(candidateTraits, suffix);
     if (!table) {
-        console.log("No matching table found for token: ", token.name);
-        console.log("Candidate tables: ", tables);
         return null;
     }
     const result = await table.draw({displayChat: false});
     if (result.results.length > 0) {
-        const name = result.results[0].name + " (" + token.actor.name + ")";
-        ui.notifications.info("Assigned random name: " + name);
+        return result.results[0].name;
+    }
+    return null;
+}
+
+async function rollRandomName(candidateTraits) {
+    const title= await rollComponent(candidateTraits, "title");
+    const first= await rollComponent(candidateTraits, "first");
+    const last= await rollComponent(candidateTraits, "last");
+    const name = [title, first, last].filter(Boolean).join(" ");
+    if (name) {
         return name;
+    }    
+    return null;
+}
+
+async function buildNameForToken(token, originalName) {
+    if (!token) {
+        return null;
+    }
+    var tables = await getTokenCandidateTraits(token);
+    const newName = await rollRandomName(tables);
+    if (newName) {
+        return newName + " (" + originalName + ")";
     }
     return null;
 }
@@ -73,7 +89,8 @@ async function assignRandomName(token) {
         return;
     }
     const originalName = token.actor.name;
-    const newName = await findRandomNameForToken(token, originalName);
+    const newName = await buildNameForToken(token, originalName);
+    console.log("new name generated: ", newName);
     if (newName && newName !== originalName) {
         console.log("Assigning name: ", newName);
         await token.document.update({name: newName});

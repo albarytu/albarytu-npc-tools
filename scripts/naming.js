@@ -18,27 +18,46 @@ async function getTokenCandidateTraits(token) {
     for (const ancestry of ancestries) {
         candidates.push(ancestry);
     }
-    // language only
-    for (const language of languages) {
-        candidates.push(language);
-    }
     return candidates;
+}
+
+async function findCandidateTable(candidateTableName) {
+    if (!candidateTableName) {
+        return null;
+    }
+    // search world first.
+    var table = game.tables.find(t => t.name.toLowerCase() === candidateTableName.toLowerCase());
+    if (table) {
+        // console.log("Found world table for: ", candidateTableName);
+        return table;
+    }
+    // search compendium tables next.
+    for (const pack of game.packs) {
+        if (pack.documentName !== "RollTable") {
+            continue;
+        }
+        const index = await pack.getIndex();
+        const entry = index.find(e => e.name.toLowerCase() === candidateTableName.toLowerCase());
+        if (entry) {
+            const table = await pack.getDocument(entry._id);
+            // console.log("Found compendium table for: ", candidateTableName, " in pack: ", pack.collection);
+            return table;
+        }        
+    }
+    return null;
 }
 
 async function findMatchingTable(candidateTraits, suffix) {
     if (!candidateTraits || candidateTraits.length === 0) {
         return null;
     }
-    const folder = game.folders.find(f => f.type === "RollTable" && f.name === "albarytu-npc-names");
-    if (!folder) {
-        ui.notifications.warn("RollTable Folder 'albarytu-npc-names' not found.");
-        return null;
-    }
+    // look for a relevant table in the order of specificity: actor template, ancestry-language combo, ancestry only
     for (const candidate of candidateTraits) {
-        const tname = candidate + (suffix ? "-" + suffix : "");
-        var table = game.tables.find(t => t.folder?.id === folder.id && t.name.toLowerCase() === tname.toLowerCase());
+        const tname = candidate + (suffix ? "::" + suffix : "");
+        // console.log("Searching for names roll table: ", tname);
+        var table = await findCandidateTable(tname);
         if (table) {
-            console.log("Found names roll table for: ", tname);
+            // console.log("Found names roll table for: ", tname);
             return table;
         }
     }
@@ -90,7 +109,6 @@ async function assignRandomName(token) {
     }
     const originalName = token.actor.name;
     const newName = await buildNameForToken(token, originalName);
-    console.log("new name generated: ", newName);
     if (newName && newName !== originalName) {
         console.log("Assigning name: ", newName);
         await token.document.update({name: newName});

@@ -9,9 +9,13 @@ The module is built around two GM workflows:
 
 The design is intentionally system-agnostic. It does not assume a specific ancestry or naming scheme. Instead, it looks for tables by actor traits and languages, and it prefers world content over module content. Tested with PF2E/SF2E.
 
+![HUD view](screenshots/hud.png)
+
 ---
 
-## How the naming logic actually works
+## Automatic NPC naming
+
+![Generated NPCs](screenshots/gen_names.png)
 
 ### Trigger conditions
 
@@ -58,6 +62,8 @@ The check is case-insensitive and the table name has to match exactly as a strin
 
 If a table is not found in either location, the module simply tries the next candidate instead of failing immediately.
 
+![Table Example](screenshots/table_example.png)
+
 ### Name generation
 
 Each name is assembled from three parts:
@@ -89,7 +95,7 @@ This is a safety check to avoid creating duplicate character names.
 
 ### Re-roll feature
 
-When an unlinked token has received a generated name, the module adds a dice button to that token's HUD. Clicking it re-runs the same naming logic against the same token.
+When an unlinked token has received a generated name, the module adds a ![Re-roll button](screenshots/reroll_button.png) button to that token's HUD. Clicking it re-runs the same naming logic against the same token.
 
 This allows e.g. copy-pasting the unlinked token multiple times, and assigning a new name to each token.
 
@@ -97,9 +103,11 @@ This allows e.g. copy-pasting the unlinked token multiple times, and assigning a
 
 ## Promote token to Actor
 
+![Full named NPC actors](screenshots/full_named_actors.png)
+
 The second major feature is promoting an unlinked NPC token into a persistent Actor.
 
-This is triggered from the Token HUD and is only available for unlinked tokens.
+This is triggered from a ![Promote Button](screenshots/promote_button.png) button in the Token HUD (only available for unlinked tokens).
 
 ### What gets preserved
 

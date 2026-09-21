@@ -13,6 +13,43 @@ Originally developed for PF2E and SF2E campaigns, but designed to be system-agno
 
 # Features
 
+## Hierarchical Table-based Naming
+
+When a token is created for a non-unique, the module can automatically generate a name using RollTables.
+Names are generated only when:
+- the token is unlinked
+- the token and its actor name are the same
+- an appropriate RollTable can be found
+That way, manually renamed tokens are not modified.
+
+RollTable-Based Naming Names are generated from standard Foundry RollTables. Relevant Tables will be searched on the world as well as compendiums, allowing this to be extensible via other modules.
+
+Names are formed with three segments: title + first + last.
+
+The module will search for one table for each of these naming components based on the actor, in a hierarchical way (top ones get preference over the bottom). We make the assumption that spoken languages have something to do with a character's culture:
+
+- actor name (e.g. "aeon guard trooper::title" contains titles or ranks for Aeon Guard Trooper characters)
+- ancestry/traits + language (e.g. "human-azlanti::last" contains last names for Human characters that speak Azlanti)
+- ancestry/traits only (e.g. "human::first" for generic human first names)
+
+This way, a generic Aeon Guard Trooper can automatically become "Leiteunant John Graxton (Aeon Guard Trooper)".
+
+The module automatically discovers and uses tables under the "albarytu-npc-names" folder. No configuration is required.
+
+If no tables are found for a given token, the original name is left untouched.
+
+### Name uniqueness
+
+If the resulting full name is already taken by another token in the scene or a world actor, the name will be re-rolled up to 10 times.
+If no unique name can be obtained, the original name will be left untouched.
+
+### Name re-rolling
+
+When an unlinked token has been assigned a name by this module, a new button will show in its HUD, allowing to re-roll its name.
+It will use the same mechanisms described above.
+
+---
+
 ## Promote Token to Actor
 
 Unlinked NPC tokens can be promoted into unique persistent Actors directly from the Token HUD.
@@ -37,30 +74,9 @@ Goblin Warrior
 token becomes Gargle (Goblin Warrior)
 ↓ when it becomes important, use the Promote action
 
-new Actor gets created for Gargle (Goblin Warrior)
+new (persistent) Actor gets created for Gargle (Goblin Warrior)
+
 --- 
-
-## Hierarchical Table-based Naming
-
-When a token is created for a non-unique, the module can automatically generate a name using RollTables.
-Names are generated only when:
-- the token is unlinked
-- the token and its actor name are the same
-- an appropriate RollTable can be found
-That way, manually renamed tokens are not modified.
-
-RollTable-Based Naming Names are generated from standard Foundry RollTables.
-Names are formed with three segments: title + first + last.
-
-The module will search for one table for each of these naming components based on the actor, in a hierarchical way (top ones get preference over the bottom). We make the assumption that spoken languages have something to do with a character's culture:
-
-- actor name (e.g. "aeon guard trooper::title" contains titles or ranks for Aeon Guard Trooper characters)
-- ancestry/traits + language (e.g. "human-azlanti::last" contains last names for Human characters that speak Azlanti)
-- ancestry/traits only (e.g. "human::first" for generic human first names)
-
-The module automatically discovers and uses tables under the "albarytu-npc-names" folder. No configuration is required.
-
----
 
 # Design Goals
 - System agnostic
@@ -74,12 +90,10 @@ The module automatically discovers and uses tables under the "albarytu-npc-names
 ---
 
 # Future Ideas Possible future enhancements:
-- Name reroll HUD button
-- Name uniqueness protection
 - Batch name generation
 - Alternate name formats
-- Compendium-backed naming packs
 - Additional NPC management tools
+- companion system-specific packs (for SF2E/PF2E)
 
 # Companion Content Packs
 

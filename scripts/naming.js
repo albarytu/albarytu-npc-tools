@@ -132,6 +132,7 @@ async function buildUniqueNameForToken(token, templateName) {
             return newName;
         }
     }
+    ui.notifications.warn("Could not generate an unique name");
     return null;
 }
 

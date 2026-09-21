@@ -76,14 +76,20 @@ async function rollComponent(candidateTraits, suffix) {
 }
 
 async function rollRandomName(candidateTraits) {
-    const title= await rollComponent(candidateTraits, "title");
-    const first= await rollComponent(candidateTraits, "first");
-    const last= await rollComponent(candidateTraits, "last");
+    const title = await rollComponent(candidateTraits, "title");
+    if (title === "") {
+        title = null;
+    }
+    const first = await rollComponent(candidateTraits, "first");
+    if (first === "") {
+        first = null;
+    }
+    const last = await rollComponent(candidateTraits, "last");
+    if (last === "") {
+        last = null;
+    }
     const name = [title, first, last].filter(Boolean).join(" ");
-    if (name) {
-        return name;
-    }    
-    return null;
+    return name;
 }
 
 async function buildNameForToken(token, templateName) {
@@ -92,7 +98,7 @@ async function buildNameForToken(token, templateName) {
     }
     var tables = await getTokenCandidateTraits(token, templateName);
     const newName = await rollRandomName(tables);
-    if (newName) {
+    if (newName && newName != "") {
         return newName + " (" + templateName + ")";
     }
     return null;
@@ -121,11 +127,12 @@ async function buildUniqueNameForToken(token, templateName) {
     if (!token) {
         return null;
     }
+    
     for (let i = 0; i < 10; i++) {
         const newName = await buildNameForToken(token, templateName);
         if (!newName || newName === templateName) {
-            // we couldn't create a new name - exit early
-            break;
+            // we couldn't generate a name. Exit early
+            return null;
         }
         // check if the new name is unique
         if (await isUniqueName(newName)) {

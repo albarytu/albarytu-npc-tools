@@ -1,107 +1,157 @@
 # Albarytu NPC Tools
 
-A Foundry VTT module for transforming disposable NPC tokens into persistent story characters.
+A Foundry VTT utility module for turning disposable NPC tokens into more usable scene companions and story characters.
 
-The module focuses on two common Game Master workflows:
+The module is built around two GM workflows:
 
-- Giving generic NPCs meaningful randomized names when they enter the scene.
-- Promoting an important NPC token into a permanent Actor without losing its current state.
+- automatically assigning names to generic unlinked NPC tokens from RollTables
+- promoting a disposable token into a real persistent Actor without losing its current state
 
-Originally developed for PF2E and SF2E campaigns, but designed to be system-agnostic and driven by RollTables rather than hardcoded content.
-
----
-
-# Features
-
-## Hierarchical Table-based Naming
-
-When a token is created for a non-unique, the module can automatically generate a name using RollTables.
-Names are generated only when:
-- the token is unlinked
-- the token and its actor name are the same
-- an appropriate RollTable can be found
-That way, manually renamed tokens are not modified.
-
-RollTable-Based Naming Names are generated from standard Foundry RollTables. Relevant Tables will be searched on the world as well as compendiums, allowing this to be extensible via other modules.
-
-Names are formed with three segments: title + first + last.
-
-The module will search for one table for each of these naming components based on the actor, in a hierarchical way (top ones get preference over the bottom). We make the assumption that spoken languages have something to do with a character's culture:
-
-- actor name (e.g. "aeon guard trooper::title" contains titles or ranks for Aeon Guard Trooper characters)
-- ancestry/traits + language (e.g. "human-azlanti::last" contains last names for Human characters that speak Azlanti)
-- ancestry/traits only (e.g. "human::first" for generic human first names)
-
-This way, a generic Aeon Guard Trooper can automatically become "Leiteunant John Graxton (Aeon Guard Trooper)".
-
-The module automatically discovers and uses tables under the "albarytu-npc-names" folder. No configuration is required.
-
-If no tables are found for a given token, the original name is left untouched.
-
-### Name uniqueness
-
-If the resulting full name is already taken by another token in the scene or a world actor, the name will be re-rolled up to 10 times.
-If no unique name can be obtained, the original name will be left untouched.
-
-### Name re-rolling
-
-When an unlinked token has been assigned a name by this module, a new button will show in its HUD, allowing to re-roll its name.
-It will use the same mechanisms described above.
+The design is intentionally system-agnostic. It does not assume a specific ancestry or naming scheme. Instead, it looks for tables by actor traits and languages, and it prefers world content over module content. Tested with PF2E/SF2E.
 
 ---
 
-## Promote Token to Actor
+## How the naming logic actually works
 
-Unlinked NPC tokens can be promoted into unique persistent Actors directly from the Token HUD.
+### Trigger conditions
 
-When promoted:
+Names are generated only when all of the following are true:
 
-- A new Actor is created from the token's actor current state.
-- Current HP, effects, conditions, and modifications are preserved.
-- The token is now linked to the new Actor.
-- The new Actor's prototype token is updated to:
-  - use the token's actor name
-  - use linked actor data
-  - display names on owner hover (when previously disabled)
+- the token is unlinked (i.e. it's not already a unique world actor)
+- the token name matches the underlying actor name (i.e. token name hasn't been customized)
+- a valid name can be rolled from matching RollTables
 
-This workflow allows a disposable NPC to become a permanent story character with a single click.
+This guard is important: if a token was manually renamed, or if it is linked to a real Actor, the module leaves it alone.
 
-Example:
+### Candidate table names
 
-Goblin Warrior
-↓ Drop into scene
+The module builds a list of candidate tokens from the token's actor data. The order is intentionally specific-to-general:
 
-token becomes Gargle (Goblin Warrior)
-↓ when it becomes important, use the Promote action
+1. `templateName` (original name of the actor)
+2. `ancestry-language`
+3. `ancestry`
 
-new (persistent) Actor gets created for Gargle (Goblin Warrior)
+For example, if the actor is an Aeon Guard Trooper, and is a human speaker of Azlanti, the candidates could look like:
 
---- 
+- `aeon guard trooper`
+- `human-azlanti`
+- `human`
 
-# Design Goals
-- System agnostic
-- Data driven
+The code gets these values from the token actor's traits and languages and then searches for matching RollTables with suffixes:
+
+- `::title`
+- `::first`
+- `::last`
+
+So a table named `human::first` can be used for a first name, while `aeon guard trooper::title` can supply a title or rank.
+
+`aeon guard trooper::first` table in this case would take precedence over `human-azlanti::first`, and that over `human::first`, if all those tables existed.
+
+### How tables are found
+
+The module searches for tables in two places:
+
+- the world tables collection first
+- then compendium RollTables
+
+The check is case-insensitive and the table name has to match exactly as a string, such as `human::first`.
+
+If a table is not found in either location, the module simply tries the next candidate instead of failing immediately.
+
+### Name generation
+
+Each name is assembled from three parts:
+
+- title
+- first name
+- last name
+
+The generated result is then combined as:
+
+- `Title First Last (TemplateName)`
+
+For example:
+
+- `Lieutenant John Graxton (Aeon Guard Trooper)`
+
+If any part is missing, the module still uses the components that exist. If no components exist, then the original template name is left untouched.
+
+### Uniqueness enforcement
+
+Once a generated name is built, the module checks whether it is already used by:
+
+- another token in the current scene
+- an Actor in the world
+
+If it collides, the module re-rolls the naming up to 10 times. If a unique name is not found, it falls back to the original actor name and warns the GM.
+
+This is a safety check to avoid creating duplicate character names.
+
+### Re-roll feature
+
+When an unlinked token has received a generated name, the module adds a dice button to that token's HUD. Clicking it re-runs the same naming logic against the same token.
+
+This allows e.g. copy-pasting the unlinked token multiple times, and assigning a new name to each token.
+
+---
+
+## Promote token to Actor
+
+The second major feature is promoting an unlinked NPC token into a persistent Actor.
+
+This is triggered from the Token HUD and is only available for unlinked tokens.
+
+### What gets preserved
+
+When the GM clicks the promotion action, the module does the following:
+
+- creates a new Actor from the token's current actor data
+- removes the temporary Actor ID from the cloned data
+- preserves the effective current state of the token actor, including HP, conditions, and other actor data
+- links the token to the new Actor
+- updates the new Actor's prototype token data to match the new actor's details
+
+The module also preserves the token's display mode, but if the token was set to `NONE`, it upgrades it to `OWNER_HOVER` to keep the new permanent character easier to identify.
+
+### Prototype token updates
+
+The new Actor gets its prototype token updated to:
+
+- use the actor name
+- use linked actor data
+- show the new display name behavior
+
+This makes the promoted character behave like a proper persistent NPC rather than a temporary token-only entity.
+
+---
+
+## Module behavior summary
+
+This module is intentionally small and data-driven rather than hardcoded. It assumes the GM will provide useful RollTables for naming, and it does not require bespoke ancestry lists.
+
+The module also favors world-authored tables over module-provided tables, so a campaign can override the defaults without editing the module itself.
+
+---
+
+## Design goals
+
+- system agnostic
+- data driven
 - RollTable based
-- No hardcoded ancestries
-- No hardcoded naming conventions
-- World content takes precedence over module content
-- Support both generic NPCs and story-important characters
+- no hardcoded naming conventions
+- no hardcoded ancestry assumptions
+- world content takes precedence over module content
+- supports both generic scene NPCs and story-important characters
 
 ---
 
-# Future Ideas Possible future enhancements:
-- Batch name generation
-- Alternate name formats
-- Additional NPC management tools
-- companion system-specific packs (for SF2E/PF2E)
+## Companion content packs
 
-# Companion Content Packs
+This module contains the logic, not the actual naming data.
 
-This module contains functionality only.
-
-System-specific RollTables can be distributed separately, for example:
+The naming tables are intentionally expected to live in separate modules or packs, such as:
 
 - Albarytu NPC SF2E Tables
 - Albarytu NPC PF2E Tables
 
-This keeps naming data independent from the module code while allowing custom naming packs to be developed and maintained separately.
+That keeps the behavior reusable while allowing each campaign or system to provide its own naming tables independently.

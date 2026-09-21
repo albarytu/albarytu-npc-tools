@@ -16,5 +16,6 @@
         "scripts/albarytu-npc-tools.js"
     ],
     "url": "https://github.com/albarytu/albarytu-npc-tools",
-    "manifest": "https://raw.githubusercontent.com/albarytu/albarytu-npc-tools/main/module.json"
+    "manifest": "https://raw.githubusercontent.com/albarytu/albarytu-npc-tools/main/module.json",
+    "download": "https://github.com/albarytu/albarytu-npc-tools/releases/download/v0.3.0/albarytu-npc-tools-v0.3.0.zip"
 }

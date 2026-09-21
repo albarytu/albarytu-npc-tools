@@ -56,7 +56,7 @@ async function findMatchingTable(candidateTraits, suffix) {
         // console.log("Searching for names roll table: ", tname);
         var table = await findCandidateTable(tname);
         if (table) {
-            // console.log("Found names roll table for: ", tname);
+            console.log("Found names roll table for: ", tname);
             return table;
         }
     }
@@ -70,26 +70,26 @@ async function rollComponent(candidateTraits, suffix) {
     }
     const result = await table.draw({displayChat: false});
     if (result.results.length > 0) {
+        console.log("rolled ", result.results[0], " on table ", table.name);
         return result.results[0].name;
     }
     return null;
 }
 
 async function rollRandomName(candidateTraits) {
-    const title = await rollComponent(candidateTraits, "title");
+    var title = await rollComponent(candidateTraits, "title");
     if (title === "") {
         title = null;
     }
-    const first = await rollComponent(candidateTraits, "first");
+    var first = await rollComponent(candidateTraits, "first");
     if (first === "") {
         first = null;
     }
-    const last = await rollComponent(candidateTraits, "last");
+    var last = await rollComponent(candidateTraits, "last");
     if (last === "") {
         last = null;
     }
-    const name = [title, first, last].filter(Boolean).join(" ");
-    return name;
+    return [title, first, last].filter(Boolean).join(" ");
 }
 
 async function buildNameForToken(token, templateName) {
@@ -152,7 +152,7 @@ async function assignRandomName(token) {
         return;
     }
 
-    let templateName = token.actor.getFlag("albarytu-npc-tools", "originalActorName");
+    var templateName = token.actor.getFlag("albarytu-npc-tools", "originalActorName");
     if (!templateName) {
         templateName = token.actor.name;
     }

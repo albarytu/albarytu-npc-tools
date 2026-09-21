@@ -2,7 +2,7 @@
     "id": "albarytu-npc-tools",
     "title": "Albarytu NPC Tools",
     "description": "Tools for managing NPCs and tokens.",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "compatibility": {
         "minimum": "14",
         "verified": "14.367"
@@ -17,5 +17,5 @@
     ],
     "url": "https://github.com/albarytu/albarytu-npc-tools",
     "manifest": "https://raw.githubusercontent.com/albarytu/albarytu-npc-tools/main/module.json",
-    "download": "https://github.com/albarytu/albarytu-npc-tools/releases/download/v0.4.0/albarytu-npc-tools-v0.4.0.zip"
+    "download": "https://github.com/albarytu/albarytu-npc-tools/releases/download/v0.4.1/albarytu-npc-tools-v0.4.1.zip"
 }

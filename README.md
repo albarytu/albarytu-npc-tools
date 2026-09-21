@@ -78,7 +78,7 @@ The generated result is then combined as:
 
 For example:
 
-- `Lieutenant John Graxton (Aeon Guard Trooper)`
+- `Lieutenant Vanya Voss (Aeon Guard Trooper)`
 
 If any part is missing, the module still uses the components that exist. If no components exist, then the original template name is left untouched.
 

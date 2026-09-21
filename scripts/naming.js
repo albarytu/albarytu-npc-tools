@@ -1,13 +1,12 @@
-async function getTokenCandidateTraits(token) {
+async function getTokenCandidateTraits(token, templateName) {
     var candidates = [];
     if (!token) {
         return candidates;
     }
-    const actorName = token.actor.name;
     const ancestries = token.actor.system.traits.value;
     const languages = token.actor.system.details.languages.value;
     // most specific: actor template
-    candidates.push(actorName);
+    candidates.push(templateName);
     // ancestry-language combo
     for (const ancestry of ancestries) {
         for (const language of languages) {
@@ -87,14 +86,51 @@ async function rollRandomName(candidateTraits) {
     return null;
 }
 
-async function buildNameForToken(token, originalName) {
+async function buildNameForToken(token, templateName) {
     if (!token) {
         return null;
     }
-    var tables = await getTokenCandidateTraits(token);
+    var tables = await getTokenCandidateTraits(token, templateName);
     const newName = await rollRandomName(tables);
     if (newName) {
-        return newName + " (" + originalName + ")";
+        return newName + " (" + templateName + ")";
+    }
+    return null;
+}
+
+async function isUniqueName(name) {
+    if (!name) {
+        return true;
+    }
+    // check if any token in the scene has this name
+    for (const token of canvas.tokens.placeables) {
+        if (token.name === name) {
+            return false;
+        }
+    }
+    // check if any actor in the world has this name
+    for (const actor of game.actors) {
+        if (actor.name === name) {
+            return false;
+        }
+    }
+    return true;
+}
+
+async function buildUniqueNameForToken(token, templateName) {
+    if (!token) {
+        return null;
+    }
+    for (let i = 0; i < 10; i++) {
+        const newName = await buildNameForToken(token, templateName);
+        if (!newName || newName === templateName) {
+            // we couldn't create a new name - exit early
+            break;
+        }
+        // check if the new name is unique
+        if (await isUniqueName(newName)) {
+            return newName;
+        }
     }
     return null;
 }
@@ -107,16 +143,40 @@ async function assignRandomName(token) {
         console.log("Token is an unique actor or already has a custom name.");
         return;
     }
-    const originalName = token.actor.name;
-    const newName = await buildNameForToken(token, originalName);
-    if (newName && newName !== originalName) {
+
+    let templateName = token.actor.getFlag("albarytu-npc-tools", "originalActorName");
+    if (!templateName) {
+        templateName = token.actor.name;
+    }
+    const newName = await buildUniqueNameForToken(token, templateName);
+    if (newName && newName !== templateName) {
         console.log("Assigning name: ", newName);
         await token.document.update({name: newName});
-        token.actor.update({name: newName});
+        await token.actor.update({name: newName});
+        await token.actor.setFlag("albarytu-npc-tools", "originalActorName", templateName);
     }
+    await token.actor.setFlag("albarytu-npc-tools", "generated", true);
 }
+
+
 
 Hooks.on("createToken", async(tokenDocument) => {
     const token = tokenDocument.object;
     await assignRandomName(token);
 });
+
+Hooks.on("renderTokenHUD", (hud, html) => {
+    if (!game.user.isGM) return;
+    if (hud.object.document.actorLink) return; // only show for unlinked tokens
+    const rightCol = html.querySelector(".col.right");
+    if (!rightCol) return;
+    const button = document.createElement("div");
+    button.classList.add("control-icon");
+    button.innerHTML = `<i class="fas fa-dice"></i>`;
+    button.addEventListener("click", async (event) => {
+        const token = canvas.tokens.controlled[0];
+        await assignRandomName(token);
+    });
+    rightCol.appendChild(button);
+});
+

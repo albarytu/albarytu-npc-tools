@@ -31,8 +31,8 @@ async function promoteTokenToActor(token) {
 
 Hooks.on("renderTokenHUD", (hud, html) => {
     if (!game.user.isGM) return;
-    const rightCol = html.querySelector(".col.right");
     if (hud.object.document.actorLink) return; // only show for unlinked tokens
+    const rightCol = html.querySelector(".col.right");
     if (!rightCol) return;
     const button = document.createElement("div");
     button.classList.add("control-icon");
